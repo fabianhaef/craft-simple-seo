@@ -140,13 +140,21 @@ class EtherMigrationService extends Component
         // Every column saveField() rewrites has to be read back and carried
         // over: createFieldConfig() writes the whole field config, so anything
         // left off the new instance is reset to the PHP default.
-        /** @var array<int, array{id: string|int, uid: string, handle: string, name: string, context: string|null, columnSuffix: string|null, instructions: string|null, searchable: bool|int|string, translationMethod: string, translationKeyFormat: string|null, settings: string|null}> $fieldRows */
+        //
+        // columnSuffix is Craft 5 only: multi-instance same-handle fields
+        // used it to disambiguate their storage column, a concept Craft 6's
+        // layout-element-UID-based field instances replaced outright — the
+        // fields table has no such column there, and neither does the
+        // Field class, so this is a real schema difference, not a rename.
+        $hasColumnSuffix = Craft::$app->getDb()->getSchema()->getTableSchema(Table::FIELDS)?->getColumn('columnSuffix') !== null;
+        $fieldColumns = ['id', 'uid', 'handle', 'name', 'context', 'instructions', 'searchable', 'translationMethod', 'translationKeyFormat', 'settings'];
+        if ($hasColumnSuffix) {
+            $fieldColumns[] = 'columnSuffix';
+        }
+
+        /** @var array<int, array{id: string|int, uid: string, handle: string, name: string, context: string|null, columnSuffix?: string|null, instructions: string|null, searchable: bool|int|string, translationMethod: string, translationKeyFormat: string|null, settings: string|null}> $fieldRows */
         $fieldRows = (new Query())
-            ->select([
-                'id', 'uid', 'handle', 'name', 'context',
-                'columnSuffix', 'instructions', 'searchable',
-                'translationMethod', 'translationKeyFormat', 'settings',
-            ])
+            ->select($fieldColumns)
             ->from(Table::FIELDS)
             ->where(['type' => self::ETHER_FIELD_TYPE])
             ->all();
@@ -190,7 +198,9 @@ class EtherMigrationService extends Component
                 $field->handle = (string)$fieldRow['handle'];
                 $field->name = (string)$fieldRow['name'];
                 $field->context = (string)($fieldRow['context'] ?? 'global');
-                $field->columnSuffix = $fieldRow['columnSuffix'] !== null ? (string)$fieldRow['columnSuffix'] : null;
+                if ($hasColumnSuffix && property_exists($field, 'columnSuffix')) {
+                    $field->columnSuffix = $fieldRow['columnSuffix'] !== null ? (string)$fieldRow['columnSuffix'] : null;
+                }
                 $field->instructions = $fieldRow['instructions'] !== null ? (string)$fieldRow['instructions'] : null;
                 $field->searchable = (bool)$fieldRow['searchable'];
                 $field->translationKeyFormat = $fieldRow['translationKeyFormat'] !== null
