@@ -12,6 +12,7 @@ use anvildev\simpleseo\Plugin;
 use Craft;
 use craft\elements\Entry;
 use craft\mcp\attributes\RequiresPermission;
+use CraftCms\Cms\Mcp\Attributes\RequiresPermission as NativeRequiresPermission;
 use Mcp\Capability\Attribute\McpTool;
 use Mcp\Schema\ToolAnnotations;
 use stimmt\craft\Mcp\attributes\McpToolMeta;
@@ -34,6 +35,11 @@ use stimmt\craft\Mcp\enums\ToolCategory;
  * can call them; writes omit it, so they require Craft's write scope.
  * `RequiresPermission` hides every tool from users who cannot open the
  * plugin. Neither attribute is instantiated when its package is absent.
+ * `NativeRequiresPermission` is the same guard for Craft 6's own MCP
+ * server, which doesn't know the legacy attribute class at all — Craft
+ * 5's `craft\mcp\attributes\RequiresPermission` doesn't exist there, so
+ * without this second attribute every tool would be reachable over
+ * Craft 6's native MCP server with no permission check enforced.
  *
  * @author Anvil Dev
  * @since 1.0.0
@@ -58,6 +64,7 @@ class SeoTools
     )]
     #[McpToolMeta(category: ToolCategory::PLUGIN)]
     #[RequiresPermission(Permissions::ACCESS)]
+    #[NativeRequiresPermission(Permissions::ACCESS)]
     public function doctor(): array
     {
         return $this->guard(static fn(): array => Finding::listPayload(
@@ -77,6 +84,7 @@ class SeoTools
     )]
     #[McpToolMeta(category: ToolCategory::PLUGIN)]
     #[RequiresPermission(Permissions::ACCESS)]
+    #[NativeRequiresPermission(Permissions::ACCESS)]
     public function auditMeta(?string $siteHandle = null, ?string $sectionHandle = null): array
     {
         return $this->guard(static function() use ($siteHandle, $sectionHandle): array {
@@ -109,6 +117,7 @@ class SeoTools
     )]
     #[McpToolMeta(category: ToolCategory::PLUGIN)]
     #[RequiresPermission(Permissions::ACCESS)]
+    #[NativeRequiresPermission(Permissions::ACCESS)]
     public function explainSitemap(?string $siteHandle = null): array
     {
         return $this->guard(static function() use ($siteHandle): array {
@@ -136,6 +145,7 @@ class SeoTools
     )]
     #[McpToolMeta(category: ToolCategory::PLUGIN)]
     #[RequiresPermission(Permissions::ACCESS)]
+    #[NativeRequiresPermission(Permissions::ACCESS)]
     public function resolveMeta(int $entryId, ?string $siteHandle = null): array
     {
         return $this->guard(function() use ($entryId, $siteHandle): array {
@@ -162,6 +172,7 @@ class SeoTools
     )]
     #[McpToolMeta(category: ToolCategory::PLUGIN, dangerous: true)]
     #[RequiresPermission(Permissions::ACCESS)]
+    #[NativeRequiresPermission(Permissions::ACCESS)]
     public function setEntryMeta(int $entryId, ?string $title = null, ?string $description = null, ?string $siteHandle = null): array
     {
         return $this->_updateSeoValue($entryId, $siteHandle, static function(SeoData $value) use ($title, $description): void {
@@ -187,6 +198,7 @@ class SeoTools
     )]
     #[McpToolMeta(category: ToolCategory::PLUGIN, dangerous: true)]
     #[RequiresPermission(Permissions::ACCESS)]
+    #[NativeRequiresPermission(Permissions::ACCESS)]
     public function setEntryNoindex(int $entryId, bool $noindex, ?string $siteHandle = null): array
     {
         return $this->_updateSeoValue($entryId, $siteHandle, static function(SeoData $value) use ($noindex): void {

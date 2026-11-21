@@ -35,6 +35,9 @@ use craft\services\UserPermissions;
 use craft\web\Request as WebRequest;
 use craft\web\twig\variables\CraftVariable;
 use craft\web\UrlManager;
+use CraftCms\Cms\Mcp\CapabilityRegistry;
+use CraftCms\Cms\Mcp\Events\CollectingAdminInstructions as NativeCollectingAdminInstructions;
+use Illuminate\Support\Facades\Event as LaravelEvent;
 use yii\base\Event;
 
 /**
@@ -264,6 +267,27 @@ class Plugin extends BasePlugin
      */
     private function _registerCraftMcpTools(): void
     {
+        // Craft 6 replaced the whole registration mechanism, not just the
+        // namespace: craft\services\Mcp doesn't exist at all (class_exists()
+        // on it is false, not a fatal — it just means this guard needs
+        // checking first), and a plugin registers its tool types by calling
+        // register(...$types) on a container-resolved singleton instead of
+        // listening for an event. The admin-instructions hook kept the same
+        // shape but also switched mechanism: it's a real Laravel event now,
+        // dispatched through the global event() helper, not a Yii one.
+        if (class_exists(CapabilityRegistry::class)) {
+            app(CapabilityRegistry::class)->register(\anvildev\simpleseo\mcp\SeoTools::class);
+
+            LaravelEvent::listen(
+                NativeCollectingAdminInstructions::class,
+                static function(NativeCollectingAdminInstructions $event): void {
+                    $event->instructions[] = 'Use the simple_seo_* tools to diagnose search visibility, audit meta, explain the sitemap, resolve one entry\'s meta, and edit that entry\'s title, description, or noindex. There are no tools for site-wide settings or robots.txt.';
+                },
+            );
+
+            return;
+        }
+
         if (!class_exists(\craft\services\Mcp::class)) {
             return;
         }
