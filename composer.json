@@ -19,7 +19,7 @@
   },
   "require": {
     "php": "^8.2",
-    "craftcms/cms": "^5.0"
+    "craftcms/cms": "^5.0 || ^6.0"
   },
   "suggest": {
     "stimmt/craft-mcp": "On Craft older than 5.12, exposes Simple SEO's diagnostics and meta tools to MCP clients. Craft 5.12 and newer provide this through the built-in MCP server."
